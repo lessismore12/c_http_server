@@ -10,17 +10,17 @@
 #define BUFFER_SIZE 4096
 
 struct Response {
-    char httpType[64];
-    char contentType[64];
-    char contentLength[64];
+    char http_type[64];
+    char content_type[64];
+    char content_length[64];
     char connection[64];
     char body[256];
 };
 
 void to_string(struct Response* response, char* res) {
-    strcpy(res, response->httpType);
-    strcat(res, response->contentType);
-    strcat(res, response->contentLength);
+    strcpy(res, response->http_type);
+    strcat(res, response->content_type);
+    strcat(res, response->content_length);
     strcat(res, response->connection);
     strcat(res, response->body);
 }
@@ -28,9 +28,9 @@ void to_string(struct Response* response, char* res) {
 void generate_http_response(const char* body, char* res) {
     struct Response responseStruct;
 
-    sprintf(responseStruct.httpType, "HTTP/1.1 200 OK\r\n");
-    sprintf(responseStruct.contentType, "Content-Type: text/html\r\n");
-    sprintf(responseStruct.contentLength, "Content-Length: %zu\r\n", strlen(body));
+    sprintf(responseStruct.http_type, "HTTP/1.1 200 OK\r\n");
+    sprintf(responseStruct.content_type, "Content-Type: text/html\r\n");
+    sprintf(responseStruct.content_length, "Content-Length: %zu\r\n", strlen(body));
     sprintf(responseStruct.connection, "Connection: close\r\n\r\n");
     strcpy(responseStruct.body, body);
 
