@@ -1,11 +1,23 @@
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #define CLOSESOCKET closesocket
+    #define Socket SOCKET
+    #pragma comment(lib, "Ws2_32.lib")
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <unistd.h>
+    typedef int Socket;
+    #define CLOSESOCKET close
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#pragma comment(lib, "Ws2_32.lib")
-#define CLOSESOCKET closesocket
+
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
@@ -37,7 +49,7 @@ void generate_http_response(const char* body, char* res) {
     to_string(&responseStruct, res);
 }
 
-void handle_client(SOCKET clientSocket) {
+void handle_client(Socket clientSocket) {
     char* buffer = malloc(BUFFER_SIZE);
     if (!buffer) {
         perror("Failed to allocate memory for buffer");
@@ -58,7 +70,7 @@ void handle_client(SOCKET clientSocket) {
     if (bytesRead > 0) {
         char* response = malloc(BUFFER_SIZE);
         if (!response) {
-            perror("Failed to allocate memory for response");
+            printf("Failed to allocate memory for response");
             free(buffer);
             CLOSESOCKET(clientSocket);
             return;
@@ -82,20 +94,28 @@ void handle_client(SOCKET clientSocket) {
     CLOSESOCKET(clientSocket);
 }
 
-int main() {
-    SOCKET server_socket;
+int main() 
+{
+    Socket server_socket;
     struct sockaddr_in server_addr, client_addr;
 
+#ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("WSAStartup failed\n");
         return 1;
     }
+#endif
 
     server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == INVALID_SOCKET) {
+#ifdef _WIN32
         printf("Socket creation failed: %d\n", WSAGetLastError());
         WSACleanup();
+#else 
+        printf("setsockopt(SO_REUSEADDR) failed\n");
+#endif
+        CLOSESOCKET(server_socket);
         return 1;
     }
 
@@ -104,16 +124,24 @@ int main() {
     server_addr.sin_port = htons(PORT);
 
     if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+#ifdef _WIN32
         printf("Bind failed: %d\n", WSAGetLastError());
-        CLOSESOCKET(server_socket);
         WSACleanup();
+#else
+        printf("Bind failed\n");
+        CLOSESOCKET(server_socket);
+#endif
         return 1;
     }
 
     if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR) {
+#ifdef _WIN32
         printf("Listen failed: %d\n", WSAGetLastError());
-        CLOSESOCKET(server_socket);
         WSACleanup();
+#else
+        printf("Listen failed\n");
+        CLOSESOCKET(server_socket);
+#endif
         return 1;
     }
 
@@ -133,6 +161,8 @@ int main() {
     }
 
     CLOSESOCKET(server_socket);
+#ifdef _WIN32
     WSACleanup();
+#endif
     return 0;
 }
