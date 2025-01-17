@@ -7,3 +7,7 @@ cpp: main.cpp
 windows: server.c
 	gcc server.c -o server $(libs)
 	./server
+
+linux: server.c
+	gcc -o server server.c
+	./server
