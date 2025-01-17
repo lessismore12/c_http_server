@@ -9,5 +9,5 @@ windows: server.c
 	./server
 
 linux: server.c
-	gcc -o server server.c
-	./server
+	gcc -o linux_server server.c
+	./linux_server
