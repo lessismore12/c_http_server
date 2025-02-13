@@ -59,6 +59,12 @@ void handle_client(Socket clientSocket) {
 
     int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead == -1) {
+#ifdef _WIN32
+        printf("Socket creation failed: %d\n", WSAGetLastError());
+        WSACleanup();
+#else 
+        printf("Socket creation failed\n");
+#endif
         printf("recv failed: %d\n", WSAGetLastError());
         free(buffer);
         CLOSESOCKET(clientSocket);
@@ -123,7 +129,7 @@ int main()
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
 #ifdef _WIN32
         printf("Bind failed: %d\n", WSAGetLastError());
         WSACleanup();
