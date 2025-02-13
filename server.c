@@ -163,7 +163,7 @@ int main()
 #ifdef _WIN32
             printf("Accept failed: %d\n", WSAGetLastError());
 #else
-            printf("Accept failed\n")
+            printf("Accept failed\n");
 #endif
             continue;
         }
