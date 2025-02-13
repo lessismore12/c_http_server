@@ -160,7 +160,11 @@ int main()
         SOCKET clientSocket = accept(server_socket, (struct sockaddr*)&clientAddr, &clientAddrSize);
 
         if (clientSocket == -1) {
+#ifdef _WIN32
             printf("Accept failed: %d\n", WSAGetLastError());
+#else
+            printf("Accept failed\n")
+#endif
             continue;
         }
 
