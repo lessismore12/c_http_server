@@ -58,7 +58,7 @@ void handle_client(Socket clientSocket) {
     }
 
     int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
-    if (bytesRead == SOCKET_ERROR) {
+    if (bytesRead == -1) {
         printf("recv failed: %d\n", WSAGetLastError());
         free(buffer);
         CLOSESOCKET(clientSocket);
@@ -108,7 +108,7 @@ int main()
 #endif
 
     server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (server_socket == INVALID_SOCKET) {
+    if (server_socket == -1) {
 #ifdef _WIN32
         printf("Socket creation failed: %d\n", WSAGetLastError());
         WSACleanup();
@@ -152,7 +152,7 @@ int main()
         int clientAddrSize = sizeof(clientAddr);
         SOCKET clientSocket = accept(server_socket, (struct sockaddr*)&clientAddr, &clientAddrSize);
 
-        if (clientSocket < 0) {
+        if (clientSocket == -1) {
             printf("Accept failed: %d\n", WSAGetLastError());
             continue;
         }
