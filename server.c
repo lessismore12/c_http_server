@@ -61,11 +61,12 @@ void handle_client(Socket clientSocket) {
     if (bytesRead == -1) {
 #ifdef _WIN32
         printf("Socket creation failed: %d\n", WSAGetLastError());
+        printf("recv failed: %d\n", WSAGetLastError());
         WSACleanup();
 #else 
         printf("Socket creation failed\n");
+        printf("recv failed\n");
 #endif
-        printf("recv failed: %d\n", WSAGetLastError());
         free(buffer);
         CLOSESOCKET(clientSocket);
         return;
