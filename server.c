@@ -134,7 +134,7 @@ int main()
         return 1;
     }
 
-    if (listen(server_socket, SOMAXCONN) > 0) {
+    if (listen(server_socket, SOMAXCONN) < 0) {
 #ifdef _WIN32
         printf("Listen failed: %d\n", WSAGetLastError());
         WSACleanup();
@@ -152,7 +152,7 @@ int main()
         int clientAddrSize = sizeof(clientAddr);
         SOCKET clientSocket = accept(server_socket, (struct sockaddr*)&clientAddr, &clientAddrSize);
 
-        if (clientSocket > 0) {
+        if (clientSocket < 0) {
             printf("Accept failed: %d\n", WSAGetLastError());
             continue;
         }

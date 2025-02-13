@@ -5,8 +5,8 @@ cpp: main.cpp
 	./main
 
 windows: server.c
-	gcc server.c -o server $(libs)
-	./server
+	gcc server.c -o windows_server $(libs)
+	./windows_server
 
 linux: server.c
 	gcc -o linux_server server.c
