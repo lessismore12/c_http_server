@@ -9,7 +9,7 @@
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <unistd.h>
-    typedef int Socket;
+    typedef int SOCKET;
     #define CLOSESOCKET close
 #endif
 
