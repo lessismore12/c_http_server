@@ -157,7 +157,7 @@ int main()
     while (1) {
         struct sockaddr_in clientAddr;
         int clientAddrSize = sizeof(clientAddr);
-        SOCKET clientSocket = accept(server_socket, (struct sockaddr*)&clientAddr, &clientAddrSize);
+        Socket clientSocket = accept(server_socket, (struct sockaddr*)&clientAddr, &clientAddrSize);
 
         if (clientSocket == -1) {
 #ifdef _WIN32
