@@ -84,7 +84,7 @@ void handle_client(Socket clientSocket) {
         }
 
         response[0] = '\0'; // Initialize the string to be empty
-        const char* body = "<html><body><h1>Hi Katie!</h1></body></html>";
+        const char* body = "<html><body><h1>You're  doing great! Keep it up</h1></body></html>";
         printf("Request received:\n%s\n", buffer);
 
         generate_http_response(body, response);
