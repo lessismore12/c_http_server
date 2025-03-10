@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 
 #define PORT 8080
@@ -49,15 +50,23 @@ void generate_http_response(const char* body, char* res) {
     to_string(&responseStruct, res);
 }
 
-void handle_client(Socket clientSocket) {
+void* handle_client(void* arg) {
+    Socket clientSocket = *(Socket*) arg;
+    free(arg);
+#ifdef _WIN32
+    printf("Handling client in thread ID: %lu\n", GetCurrentThreadId());
+#else
+    printf("Handling client in thread ID: %lu\n", pthread_self());
+#endif
+
     char* buffer = malloc(BUFFER_SIZE);
     if (!buffer) {
         perror("Failed to allocate memory for buffer");
         CLOSESOCKET(clientSocket);
-        return;
     }
 
     int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+    free(buffer);
     if (bytesRead == -1) {
 #ifdef _WIN32
         printf("Socket creation failed: %d\n", WSAGetLastError());
@@ -67,12 +76,12 @@ void handle_client(Socket clientSocket) {
         printf("Socket creation failed\n");
         printf("recv failed\n");
 #endif
-        free(buffer);
         CLOSESOCKET(clientSocket);
-        return;
     }
 
     buffer[bytesRead] = '\0'; // Null-terminate the buffer
+
+    printf("Received request:\n%s\n", buffer);
 
     if (bytesRead > 0) {
         char* response = malloc(BUFFER_SIZE);
@@ -80,15 +89,14 @@ void handle_client(Socket clientSocket) {
             printf("Failed to allocate memory for response");
             free(buffer);
             CLOSESOCKET(clientSocket);
-            return;
         }
 
         response[0] = '\0'; // Initialize the string to be empty
         const char* body = "<html><body><h1>You're  doing great! Keep it up</h1></body></html>";
-        printf("Request received:\n%s\n", buffer);
+        //printf("Request received:\n%s\n", buffer);
 
         generate_http_response(body, response);
-        printf("Response:\n%s\n", response);
+        //printf("Response:\n%s\n", response);
 
         send(clientSocket, response, strlen(response), 0);
 
@@ -168,7 +176,18 @@ int main()
             continue;
         }
 
-        handle_client(clientSocket);
+        pthread_t thread1;
+        Socket* clientSocketPtr = malloc(sizeof(Socket));
+        if (!clientSocketPtr) {
+            perror("Failed to allocate memory for client socket");
+            continue;
+        }
+        *clientSocketPtr = clientSocket;
+
+        if (pthread_create(&thread1, NULL, handle_client, clientSocketPtr) != 0) {
+            perror("Failed to create thread 1");
+            return 1;
+        }
     }
 
     CLOSESOCKET(server_socket);

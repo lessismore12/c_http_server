@@ -1,4 +1,4 @@
-libs = -lwsock32
+libs = -lwsock32 -lpthread
 
 cpp: main.cpp
 	g++ main.cpp -o main $(libs)
