@@ -65,6 +65,13 @@ void* handle_client(void* arg) {
         CLOSESOCKET(clientSocket);
     }
 
+/*     if (strncmp(buffer, "GET /favicon.ico", 16) == 0) {
+        printf("Ignoring favicon request.\n");
+        free(buffer);
+        CLOSESOCKET(clientSocket);
+        return;
+    } */
+
     int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     free(buffer);
     if (bytesRead == -1) {
