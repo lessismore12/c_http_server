@@ -46,13 +46,15 @@ void generate_http_response(const char* body, char* res) {
     sprintf(responseStruct.content_length, "Content-Length: %zu\r\n", strlen(body));
     sprintf(responseStruct.connection, "Connection: close\r\n\r\n");
     strcpy(responseStruct.body, body);
+    sprintf(responseStruct.connection, "Connection: close\r\n\r\n");
 
     to_string(&responseStruct, res);
 }
 
 void* handle_client(void* arg) {
     Socket clientSocket = *(Socket*) arg;
-    free(arg);
+    free(arg); // Free the allocated memory for socket
+
 #ifdef _WIN32
     printf("Handling client in thread ID: %lu\n", GetCurrentThreadId());
 #else
@@ -63,57 +65,53 @@ void* handle_client(void* arg) {
     if (!buffer) {
         perror("Failed to allocate memory for buffer");
         CLOSESOCKET(clientSocket);
+        return NULL;
     }
+    memset(buffer, 0, BUFFER_SIZE); // Ensure buffer is initialized
 
-/*     if (strncmp(buffer, "GET /favicon.ico", 16) == 0) {
-        printf("Ignoring favicon request.\n");
-        free(buffer);
-        CLOSESOCKET(clientSocket);
-        return;
-    } */
-
-    int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
-    free(buffer);
-    if (bytesRead == -1) {
+    int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
+    if (bytesRead == 0) {
+        printf("Client disconnected gracefully.\n");
+    } else if (bytesRead < 0) {
 #ifdef _WIN32
-        printf("Socket creation failed: %d\n", WSAGetLastError());
         printf("recv failed: %d\n", WSAGetLastError());
-        WSACleanup();
-#else 
-        printf("Socket creation failed\n");
-        printf("recv failed\n");
+#else
+        perror("recv failed");
 #endif
-        CLOSESOCKET(clientSocket);
+    } else {
+        printf("Received request (%d bytes):\n%s\n", bytesRead, buffer);
     }
-
+    
     buffer[bytesRead] = '\0'; // Null-terminate the buffer
 
     printf("Received request:\n%s\n", buffer);
 
-    if (bytesRead > 0) {
-        char* response = malloc(BUFFER_SIZE);
-        if (!response) {
-            printf("Failed to allocate memory for response");
-            free(buffer);
-            CLOSESOCKET(clientSocket);
-        }
-
-        response[0] = '\0'; // Initialize the string to be empty
-        const char* body = "<html><body><h1>You're  doing great! Keep it up</h1></body></html>";
-        //printf("Request received:\n%s\n", buffer);
-
-        generate_http_response(body, response);
-        //printf("Response:\n%s\n", response);
-
-        send(clientSocket, response, strlen(response), 0);
-
-        free(response);
-    } else {
-        printf("recv failed or connection closed by client.\n");
+    if (strncmp(buffer, "GET /favicon.ico", 16) == 0) {
+        printf("Ignoring favicon request.\n");
+        free(buffer);
+        CLOSESOCKET(clientSocket);
+        return NULL;
     }
 
-    free(buffer);
+    char* response = malloc(BUFFER_SIZE);
+    if (!response) {
+        perror("Failed to allocate memory for response");
+        free(buffer);
+        CLOSESOCKET(clientSocket);
+        return NULL;
+    }
+
+    response[0] = '\0'; // Initialize the response
+    const char* body = "<html><body><h1>You're doing great! Keep it up</h1></body></html>";
+    
+    generate_http_response(body, response);
+    send(clientSocket, response, strlen(response), 0);
     CLOSESOCKET(clientSocket);
+    free(response);
+    free(buffer);
+    printf("Socket closed\n");
+
+    return NULL;
 }
 
 int main() 
@@ -145,6 +143,9 @@ int main()
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
+    int optval = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval));
+
     if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
 #ifdef _WIN32
         printf("Bind failed: %d\n", WSAGetLastError());
@@ -173,28 +174,33 @@ int main()
         struct sockaddr_in clientAddr;
         int clientAddrSize = sizeof(clientAddr);
         Socket clientSocket = accept(server_socket, (struct sockaddr*)&clientAddr, &clientAddrSize);
-
+    
         if (clientSocket == -1) {
-#ifdef _WIN32
+    #ifdef _WIN32
             printf("Accept failed: %d\n", WSAGetLastError());
-#else
+    #else
             printf("Accept failed\n");
-#endif
+    #endif
             continue;
         }
-
+    
         pthread_t thread1;
         Socket* clientSocketPtr = malloc(sizeof(Socket));
         if (!clientSocketPtr) {
             perror("Failed to allocate memory for client socket");
+            CLOSESOCKET(clientSocket);
             continue;
         }
         *clientSocketPtr = clientSocket;
-
+    
         if (pthread_create(&thread1, NULL, handle_client, clientSocketPtr) != 0) {
-            perror("Failed to create thread 1");
-            return 1;
+            perror("Failed to create thread");
+            free(clientSocketPtr); // Free memory if thread creation fails
+            CLOSESOCKET(clientSocket);
+            continue;
         }
+    
+        pthread_detach(thread1); // Allow automatic cleanup of resources
     }
 
     CLOSESOCKET(server_socket);
