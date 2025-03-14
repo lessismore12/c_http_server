@@ -184,7 +184,7 @@ int main()
             continue;
         }
     
-        pthread_t thread1;
+        pthread_t thread~;
         Socket* clientSocketPtr = malloc(sizeof(Socket));
         if (!clientSocketPtr) {
             perror("Failed to allocate memory for client socket");
@@ -193,14 +193,14 @@ int main()
         }
         *clientSocketPtr = clientSocket;
     
-        if (pthread_create(&thread1, NULL, handle_client, clientSocketPtr) != 0) {
+        if (pthread_create(&thread, NULL, handle_client, clientSocketPtr) != 0) {
             perror("Failed to create thread");
             free(clientSocketPtr); // Free memory if thread creation fails
             CLOSESOCKET(clientSocket);
             continue;
         }
     
-        pthread_detach(thread1); // Allow automatic cleanup of resources
+        pthread_detach(thread); // Allow automatic cleanup of resources
     }
 
     CLOSESOCKET(server_socket);
