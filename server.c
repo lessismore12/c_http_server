@@ -30,6 +30,11 @@ struct Response {
     char body[256];
 };
 
+typedef struct Request {
+  
+  char *
+};
+
 void to_string(struct Response* response, char* res) {
     strcpy(res, response->http_type);
     strcat(res, response->content_type);
@@ -51,6 +56,12 @@ void generate_http_response(const char* body, char* res) {
     to_string(&responseStruct, res);
 }
 
+
+
+parsee_buffer(*char buffer) {
+
+
+}
 void* handle_client(void* arg) {
     Socket clientSocket = *(Socket*) arg;
     free(arg); // Free the allocated memory for socket
@@ -84,6 +95,7 @@ void* handle_client(void* arg) {
     
     buffer[bytesRead] = '\0'; // Null-terminate the buffer
 
+    parse_buffer(*buffer);
     printf("Received request:\n%s\n", buffer);
 
     if (strncmp(buffer, "GET /favicon.ico", 16) == 0) {
@@ -184,7 +196,7 @@ int main()
             continue;
         }
     
-        pthread_t thread~;
+        pthread_t thread;
         Socket* clientSocketPtr = malloc(sizeof(Socket));
         if (!clientSocketPtr) {
             perror("Failed to allocate memory for client socket");
