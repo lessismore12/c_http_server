@@ -30,9 +30,17 @@ struct Response {
     char body[256];
 };
 
+typedef struct Header {
+
+    char *key;
+    char *value;
+};
+
 typedef struct Request {
   
-  char *
+    char *start_line;
+    struct Header *headers;
+    char *body;
 };
 
 void to_string(struct Response* response, char* res) {
@@ -58,10 +66,11 @@ void generate_http_response(const char* body, char* res) {
 
 
 
-parsee_buffer(*char buffer) {
+parsee_buffer(char* buffer) {
 
 
 }
+
 void* handle_client(void* arg) {
     Socket clientSocket = *(Socket*) arg;
     free(arg); // Free the allocated memory for socket
