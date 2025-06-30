@@ -1,8 +1,7 @@
 libs = -lwsock32 -lpthread
 
-cpp: main.cpp
-	g++ main.cpp -o main $(libs)
-	./main
+# Default target
+all: windows
 
 windows: server.c
 	gcc server.c -o windows_server $(libs)

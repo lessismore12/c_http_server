@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-
+#include <stdbool.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 4096
@@ -30,28 +30,38 @@ struct Response {
     char body[256];
 };
 
-typedef struct Header {
-
+struct Header {
     char *key;
     char *value;
 };
 
-typedef struct Request {
-  
-    char *start_line;
+struct Request {
+    char *method;
+    char *path;
+    char *http_version;
     struct Header *headers;
     char *body;
+    int header_count;
 };
 
-void to_string(struct Response* response, char* res) {
+void request_to_string(struct Request* request)
+{
+
+}
+
+void response_to_string(struct Response* response, char* res) 
+{
     strcpy(res, response->http_type);
     strcat(res, response->content_type);
     strcat(res, response->content_length);
     strcat(res, response->connection);
     strcat(res, response->body);
+    printf("-------------Response Struct-------------\n");
+    printf("%s", res);
 }
 
-void generate_http_response(const char* body, char* res) {
+void generate_http_response(const char* body, char* res) 
+{
     struct Response responseStruct;
 
     sprintf(responseStruct.http_type, "HTTP/1.1 200 OK\r\n");
@@ -61,14 +71,42 @@ void generate_http_response(const char* body, char* res) {
     strcpy(responseStruct.body, body);
     sprintf(responseStruct.connection, "Connection: close\r\n\r\n");
 
-    to_string(&responseStruct, res);
+    response_to_string(&responseStruct, res);
 }
 
+struct Request parse_buffer(char* buffer) 
+{
+    struct Request request;
+    request.header_count = 0;
+    request.body = NULL;
+    request.headers = NULL;
+    boolean in_body = false;
 
+    char *line = strtok(buffer, "\r\n");
 
-parsee_buffer(char* buffer) {
+    if (line) 
+    {
+        char *method = strtok(line, " ");
+        char *path = strtok(NULL, " ");
+        char *http_version = strtok(NULL, " ");
 
+        request.method = strdup(method);
+        request.path = strdup(path);
+        request.http_version = strdup(http_version);
+    }
 
+    while ((line = strtok(NULL, "\r\n")))
+    {
+
+        struct Header header;
+        
+        header.key = strtok(line, ": ");
+        header.value = strtok(NULL, "\r\n");
+        request.headers[request.header_count] = header;
+        request.header_count++;
+    }
+
+    return request;
 }
 
 void* handle_client(void* arg) {
@@ -82,7 +120,8 @@ void* handle_client(void* arg) {
 #endif
 
     char* buffer = malloc(BUFFER_SIZE);
-    if (!buffer) {
+    if (!buffer) 
+    {
         perror("Failed to allocate memory for buffer");
         CLOSESOCKET(clientSocket);
         return NULL;
@@ -90,24 +129,28 @@ void* handle_client(void* arg) {
     memset(buffer, 0, BUFFER_SIZE); // Ensure buffer is initialized
 
     int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
-    if (bytesRead == 0) {
+    if (bytesRead == 0) 
+    {
         printf("Client disconnected gracefully.\n");
-    } else if (bytesRead < 0) {
+    } else if (bytesRead < 0) 
+    {
 #ifdef _WIN32
         printf("recv failed: %d\n", WSAGetLastError());
 #else
         perror("recv failed");
 #endif
-    } else {
+    } else 
+    {
         printf("Received request (%d bytes):\n%s\n", bytesRead, buffer);
     }
     
     buffer[bytesRead] = '\0'; // Null-terminate the buffer
 
-    parse_buffer(*buffer);
+    parse_buffer(buffer);
     printf("Received request:\n%s\n", buffer);
 
-    if (strncmp(buffer, "GET /favicon.ico", 16) == 0) {
+    if (strncmp(buffer, "GET /favicon.ico", 16) == 0) 
+    {
         printf("Ignoring favicon request.\n");
         free(buffer);
         CLOSESOCKET(clientSocket);
